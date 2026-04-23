@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureBit — NexaTag AI Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0B1120;
+      color: #E2E8F0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #162032;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #3B82F6;
+    }
+    .header h1 {
+      font-size: 22px;
+      color: #fff;
+      font-weight: 700;
+    }
+    .header h1 span { color: #3B82F6; }
+    .status-dot {
+      width: 10px; height: 10px;
+      background: #10B981;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .live-badge {
+      font-size: 12px;
+      color: #10B981;
+      font-weight: 600;
+    }
+
+    /* ── Stats Row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 20px 24px;
+    }
+    .stat-card {
+      background: #162032;
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid #334155;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .stat-green { color: #10B981; }
+    .stat-red   { color: #EF4444; }
+    .stat-amber { color: #F59E0B; }
+    .stat-blue  { color: #3B82F6; }
+
+    /* ── Main Content Grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      padding: 0 24px 24px;
+    }
+
+    /* ── Panel ── */
+    .panel {
+      background: #162032;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #334155;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94A3B8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* ── Scan Feed ── */
+    .scan-feed {
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .scan-entry {
+      display: grid;
+      grid-template-columns: 90px 110px 1fr 90px 80px;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid #1E293B;
+      align-items: center;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .scan-entry:hover { background: #1E293B; }
+    .scan-entry.granted { border-left: 3px solid #10B981; }
+    .scan-entry.denied  { border-left: 3px solid #EF4444; }
+    .scan-entry.tapfail { border-left: 3px solid #F59E0B; }
+    .scan-entry.lockout { border-left: 3px solid #EF4444;
+                          background: #1A0A0A; }
+
+    .scan-feed-header {
+      display: grid;
+      grid-template-columns: 90px 110px 1fr 90px 80px;
+      gap: 12px;
+      padding: 10px 18px;
+      font-size: 11px;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: #0F1924;
+    }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .badge-green  { background: #064E3B; color: #34D399; }
+    .badge-red    { background: #450A0A; color: #FCA5A5; }
+    .badge-amber  { background: #451A03; color: #FCD34D; }
+    .badge-purple { background: #2E1065; color: #C4B5FD; }
+
+    /* ── Anomaly Alerts ── */
+    .alert-list {
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .alert-item {
+      padding: 14px 16px;
+      border-bottom: 1px solid #1E293B;
+      border-left: 3px solid #EF4444;
+    }
+    .alert-type {
+      font-size: 12px;
+      font-weight: 700;
+      color: #EF4444;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .alert-msg {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-bottom: 4px;
+    }
+    .alert-time {
+      font-size: 11px;
+      color: #475569;
+    }
+    .no-alerts {
+      padding: 24px;
+      text-align: center;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    /* ── UID chip ── */
+    .uid-chip {
+      font-family: monospace;
+      font-size: 12px;
+      background: #1E293B;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #93C5FD;
+    }
+
+    .time-cell { color: #64748B; font-size: 12px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0B1120; }
+    ::-webkit-scrollbar-thumb { background: #334155;
+                                 border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>Secure<span>Bit</span> — NexaTag AI Dashboard</h1>
+  <div>
+    <span class="status-dot"></span>
+    <span class="live-badge">LIVE</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-number stat-blue" id="totalScans">0</div>
+    <div class="stat-label">Total Scans</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number stat-green" id="totalGranted">0</div>
+    <div class="stat-label">Access Granted</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number stat-red" id="totalDenied">0</div>
+    <div class="stat-label">Access Denied</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number stat-amber" id="totalAnomalies">0</div>
+    <div class="stat-label">Anomalies Flagged</div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="main-grid">
+
+  <!-- Left: Scan Feed -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>📋 Live Access Log</span>
+      <span id="lastUpdate" style="font-size:11px;font-weight:400"></span>
+    </div>
+    <div class="scan-feed-header">
+      <span>Time</span>
+      <span>Card UID</span>
+      <span>Result</span>
+      <span>TapCode</span>
+      <span>Status</span>
+    </div>
+    <div class="scan-feed" id="scanFeed">
+      <div style="padding:24px;text-align:center;color:#475569">
+        Waiting for first scan...
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Anomaly Alerts -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>⚠️ Anomaly Alerts</span>
+      <span id="alertCount"
+            style="background:#450A0A;color:#FCA5A5;
+                   padding:2px 8px;border-radius:10px;
+                   font-size:11px">0</span>
+    </div>
+    <div class="alert-list" id="alertList">
+      <div class="no-alerts">No anomalies detected</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+  // ── Firebase Config ─────────────────────────────
+  // Replace with YOUR actual values from Firebase Console
+ const firebaseConfig = {
+  apiKey: "AIzaSyATlNli3TIZIWDlpibx2a2C93mwm4_pKWs",
+  authDomain: "bit-nexatag.firebaseapp.com",
+  databaseURL: "https://bit-nexatag-default-rtdb.firebaseio.com",
+  projectId: "bit-nexatag",
+  storageBucket: "bit-nexatag.firebasestorage.app",
+  messagingSenderId: "357794854154",
+  appId: "1:357794854154:web:b06a74fc052548b92e76f3",
+  measurementId: "G-CLWPY04WWQ"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // ── Stats Counters ───────────────────────────────
+  let stats = { total: 0, granted: 0, denied: 0, anomalies: 0 };
+
+  function updateStats() {
+    document.getElementById('totalScans').textContent    = stats.total;
+    document.getElementById('totalGranted').textContent  = stats.granted;
+    document.getElementById('totalDenied').textContent   = stats.denied;
+    document.getElementById('totalAnomalies').textContent = stats.anomalies;
+  }
+
+  // ── Listen to Access Log ─────────────────────────
+  db.ref('/logs').on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    stats.total++;
+    if (data.access.toUpperCase() === 'GRANTED') stats.granted++;
+    else stats.denied++;
+    if (data.anomaly_flag) stats.anomalies++;
+    updateStats();
+
+    // Update last scan time
+    document.getElementById('lastUpdate').textContent =
+      'Last: ' + (data.timestamp || 'just now');
+
+    // Build entry row
+    const feed = document.getElementById('scanFeed');
+
+    // Clear placeholder
+    const placeholder = feed.querySelector('div[style]');
+    if (placeholder) placeholder.remove();
+
+    // Determine styling
+    let rowClass = 'scan-entry ';
+    let badgeClass = '';
+    let badgeText = data.access.toUpperCase();
+
+    if (data.result === 'GRANTED') {
+      rowClass += 'granted';
+      badgeClass = 'badge badge-green';
+    } else if (data.access.toUpperCase() === 'TAPCODE_FAIL') {
+      rowClass += 'tapfail';
+      badgeClass = 'badge badge-amber';
+      badgeText = 'TAP FAIL';
+    } else if (data.access.toUpperCase() === 'LOCKOUT') {
+      rowClass += 'lockout';
+      badgeClass = 'badge badge-red';
+    } else {
+      rowClass += 'denied';
+      badgeClass = 'badge badge-red';
+    }
+
+    // Anomaly indicator
+    let anomalyBadge = '';
+    if (data.anomaly_flag) {
+      anomalyBadge = '<span class="badge badge-amber">⚠ ALERT</span>';
+    }
+
+    // TapCode info
+    let tapInfo = '—';
+    if (data.holdTime > 0) {
+      tapInfo = data.holdTime + 's / ' +
+                data.tapcode_expected + 's';
+    }
+
+    // Time display
+    let timeDisplay = data.timestamp || '—';
+    if (timeDisplay.length > 8) {
+      timeDisplay = timeDisplay.substring(11, 19); // show HH:MM:SS
+    }
+
+    const row = document.createElement('div');
+    row.className = rowClass;
+    row.innerHTML = `
+      <span class="time-cell">${timeDisplay}</span>
+      <span class="uid-chip">${data.uid || '??'}</span>
+      <span>${anomalyBadge}</span>
+      <span style="color:#94A3B8;font-size:12px">${tapInfo}</span>
+      <span class="${badgeClass}">${badgeText}</span>
+    `;
+
+    // Insert newest at top
+    feed.insertBefore(row, feed.firstChild);
+  });
+
+  // ── Listen to Anomaly Alerts ─────────────────────
+  let alertCount = 0;
+  db.ref('/anomaly_alerts').on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    alertCount++;
+    document.getElementById('alertCount').textContent = alertCount;
+
+    const list = document.getElementById('alertList');
+
+    // Clear placeholder
+    const placeholder = list.querySelector('.no-alerts');
+    if (placeholder) placeholder.remove();
+
+    const item = document.createElement('div');
+    item.className = 'alert-item';
+    item.innerHTML = `
+      <div class="alert-type">⚠ ${data.type || 'ANOMALY'}</div>
+      <div class="alert-msg">${data.message || ''}</div>
+      <div class="alert-time">${data.timestamp || ''} &nbsp;·&nbsp;
+        UID: <span class="uid-chip">${data.uid || '?'}</span></div>
+    `;
+
+    list.insertBefore(item, list.firstChild);
+  });
+</script>
+</body>
+</html>
